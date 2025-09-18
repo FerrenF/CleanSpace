@@ -1,7 +1,8 @@
 ﻿
-using ProtoBuf;
 using CleanSpaceShared.Plugin;
 using CleanSpaceShared.Struct;
+using NLog.Targets;
+using ProtoBuf;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -23,7 +24,10 @@ public class MethodIdentifier
 
     [ProtoMember(3)]
     public string MethodName { get; set; }
- 
+
+    [ProtoMember(4)]
+    public bool InExecutingAssembly { get; set; }
+
 }
 
 public static class ILAttester
@@ -75,6 +79,11 @@ public class JittestResponse
     [ProtoMember(8)]
     public byte[] Mac { get; set; } = Array.Empty<byte>();
 }
+
+
+// JitAttest. While I leave this here, it is currently a failed experiment.
+// Normalizing x64 op codes to be reliabily consistent in how similar they are across environments is not easy.
+// But, look forward to it, cheaters.
 public static class JitAttest
 {
     // Maximum bytes to try reading. God hope we dont hit this limit.
@@ -164,8 +173,8 @@ public enum RequestType : byte
 {
     MethodIL = 31,
   //  TypeIL = 32, ITS NOT GONE! todo! :(
-  //  SaltEcho = 32,
-  //  LoadedAssembliesCount = 40,
+  //  SaltEcho = 32, Pointless, but maybe
+  //  LoadedAssembliesCount = 40, COMPLETELY pointless
   //  JitAttestation = 100   :( experiment unsuccessful
 }
 
@@ -200,6 +209,7 @@ public static class ChatterChallengeFactory
         return methods[_rng.Next(methods.Length)];
     }
 
+
     public static ChatterChallenge CreateSessionParameters(byte[] salt)
     {
         var numRequests = _rng.Next(2, 5);
@@ -215,43 +225,60 @@ public static class ChatterChallengeFactory
             switch (newRequesType)
             {
                 case ((byte)RequestType.MethodIL):
-              //  case ((byte)RequestType.JitAttestation):
-                    Type[] choices = Common.CriticalTypes;
-                    if (choices == null || choices.Length == 0)
+                    //  case ((byte)RequestType.JitAttestation):
+
+                    bool ct_MakeCoreType = _rng.Next(0, 1) == 1;
+
+                    // On a coin flip, we either take a method from our critical types.
+                    if (!ct_MakeCoreType)
                     {
-                        Common.Logger.Error($"{Common.PluginName}: CriticalTypes is null or empty! Skipping.");
-                        continue;
-                    }
+                        Type[] choices = Common.CriticalTypes;
+                        Type choice = choices[_rng.Next(choices.Length)];
+                        MethodBase target = GetRandomMethod(choice);
 
-                    Type choice = choices[_rng.Next(choices.Length)];
-                    MethodBase target = GetRandomMethod(choice);
-
-                    if (target == null)
-                    {
-                        Common.Logger.Error($"{Common.PluginName} Failed to resolve a target method for type {choice.FullName}");
-                        continue;
-                    }
-
-                    var paramTypes = target.GetParameters().Select(p => p.ParameterType.Name).ToArray();
-
-                    // Log full method signature
-                    Common.Logger.Debug($"{Common.PluginName}: Assigned method: {target.DeclaringType?.FullName}.{target.Name}({string.Join(", ", paramTypes)})");
-
-                    byte[] serializedMethodBase = ProtoUtil.Serialize(
-                        new MethodIdentifier
+                        if (target == null)
                         {
-                            FullName = target.DeclaringType?.FullName ?? "<null>",
-                            MethodParams = paramTypes,
-                            MethodName = target.Name
+                            Common.Logger.Error($"{Common.PluginName} Failed to resolve a target method for type {choice.FullName}");
+                            continue;
+                        }
+
+                        var paramTypes = target.GetParameters().Select(p => p.ParameterType.Name).ToArray();
+                        Common.Logger.Debug($"{Common.PluginName}: Assigned method: {target.DeclaringType?.FullName}.{target.Name}({string.Join(", ", paramTypes)})");
+
+                        byte[] serializedMethodBase = ProtoUtil.Serialize(
+                            new MethodIdentifier
+                            {
+                                FullName = target.DeclaringType?.FullName ?? "<null>",
+                                MethodParams = paramTypes,
+                                MethodName = target.Name,
+                                InExecutingAssembly = false
+                            });
+
+                        Common.Logger.Debug($"{Common.PluginName}: Serialized MethodIdentifier (Base64): {Convert.ToBase64String(serializedMethodBase)}");
+
+                        requests.Add(new ChatterChallengeRequest
+                        {
+                            request = newRequesType,
+                            context = serializedMethodBase
                         });
-
-                    Common.Logger.Debug($"{Common.PluginName}: Serialized MethodIdentifier (Base64): {Convert.ToBase64String(serializedMethodBase)}");
-
-                    requests.Add(new ChatterChallengeRequest
+                    }
+                    else
                     {
-                        request = newRequesType,
-                        context = serializedMethodBase
-                    });
+                        // Or we ask for a method inside the main client class like such so we do not have to load the type (which may not work).
+                        string[] choices = Common.CriticalClientMethods;
+                        string choice = choices[_rng.Next(choices.Length)];
+                        string clientNamespace = "CleanSpaceClient.CleanSpaceClientPlugin";
+                        Common.Logger.Debug($"{Common.PluginName}: Assigned method: {clientNamespace}.{choice}");
+
+                        byte[] serializedMethodBase = ProtoUtil.Serialize(
+                           new MethodIdentifier
+                           {
+                               FullName = $"{clientNamespace}.{choice}",
+                               MethodParams =  new string[] { },
+                               MethodName = choice,
+                               InExecutingAssembly = true
+                           });
+                    }
                     break;                
             }
         }

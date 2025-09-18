@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<PluginData xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="GitHubPlugin">
+  <Id>FerrenF/CleanSpace</Id>
+  <GroupId>CleanSpace</GroupId>
+  <FriendlyName>Clean Space</FriendlyName>
+  <Author>FerrenFX</Author>
+  <Commit>NA</Commit>
+  <SourceDirectories>
+    <Directory>Shared</Directory>
+    <Directory>CleanSpaceTorch</Directory>
+  </SourceDirectories>
+  <Tooltip>A Clean Space for a friendly game.</Tooltip>
+  <Description>
+	 Server-side client plugin enforcement on steroids.
+  </Description>
+</PluginData>
