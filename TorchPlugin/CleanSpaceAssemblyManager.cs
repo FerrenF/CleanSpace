@@ -26,6 +26,7 @@ namespace CleanSpaceTorch
         private IEnumerable<PluginListEntry> CleanSpaceActivePluginList => CleanSpaceScannedPluginList.Where((e)=>e.IsSelected);
         private List<string> CleanSpaceActivePluginHashes => CleanSpaceActivePluginList.Select(e => e.Hash).ToList();
         private bool ContainsHash(string h) => CleanSpaceScannedPluginList.Where(e => e.Hash.Equals(h)).Any();
+        
         public CleanSpaceAssemblyManager(string _torch_dir) {
 
             torch_dir = _torch_dir;
@@ -133,6 +134,10 @@ namespace CleanSpaceTorch
             var newList = new ObservableCollection<PluginListEntry>(original) { newEntry };
             CleanSpaceTorchPlugin.Instance.Config.AnalyzedPlugins = newList;
         }
-        
+
+        internal static Assembly GetLatestCleanSpaceClientAssembly()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

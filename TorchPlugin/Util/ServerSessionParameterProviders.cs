@@ -9,29 +9,27 @@ namespace CleanSpaceTorch.Util
         public static void RegisterProviders()
         {          
 
-            ChatterChallengeFactory.RegisterProvider(RequestType.MethodIL, (args) =>
-            {
+            ChatterChallengeFactory.RegisterProvider(RequestType.MethodIL, (args) => {         
+                
+                // One last todo here: unfortunately, we will still be required to load the clean space client assembly to respond to challenges.
                 MethodIdentifier m = ProtoUtil.Deserialize<MethodIdentifier>((byte[])args[0]);
-                // Find the assembly that contains the type
-                Type t = AppDomain.CurrentDomain
-                    .GetAssemblies()
-                    .Select(a => a.GetType(m.FullName, throwOnError: false))
-                    .FirstOrDefault(x => x != null);
+                Type t = m.InExecutingAssembly ? CleanSpaceAssemblyManager.GetLatestCleanSpaceClientAssembly().GetType("CleanSpaceClientPlugin")
+                : AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(m.FullName, throwOnError: false)).FirstOrDefault(x => x != null);
 
                 if (t == null)
                     throw new InvalidOperationException($"Type {m.FullName} not found in loaded assemblies");
 
-                MethodBase method = t.GetMethod(
-                    m.MethodName,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static
-                );
+                MethodBase method = t.GetMethod( m.MethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static );
 
                 if (method == null)
                     throw new InvalidOperationException($"Method {m.MethodName} not found on type {m.FullName}");
                 return ILAttester.GetMethodIlBytes(method);
             });
 
-          /*  SessionParameterFactory.RegisterProvider(RequestType.TypeIL, (args) =>
+          /* 
+           * I am still pondering my orb over this challenge. An entire type's IL bytes might be a pretty big packet (relatively).
+           * 
+           * SessionParameterFactory.RegisterProvider(RequestType.TypeIL, (args) =>
             {
                 MethodIdentifier m = ProtoUtil.Deserialize<MethodIdentifier>((byte[])args[0]);
 
