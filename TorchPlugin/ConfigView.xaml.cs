@@ -1,7 +1,7 @@
 using CleanSpaceShared.Events;
 using CleanSpaceShared.Logging;
-using CleanSpaceShared.Plugin;
 using CleanSpaceShared.Struct;
+using CleanSpaceTorch.Util;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using VRage.Compression;
-using VRage.Plugins;
 
 namespace CleanSpaceTorch
 {
@@ -29,7 +28,6 @@ namespace CleanSpaceTorch
             
             Instance.PluginListModeCombo.SelectedIndex = System.Enum.GetNames(typeof(PluginListType)).ToList().IndexOf(CleanSpaceTorchPlugin.Instance.Config.PluginListType.ToString());
             Instance.PluginMatchActionCombo.SelectedIndex = System.Enum.GetNames(typeof(ListMatchAction)).ToList().IndexOf(CleanSpaceTorchPlugin.Instance.Config.ListMatchAction.ToString());
-        
            
         }
 
@@ -57,38 +55,9 @@ namespace CleanSpaceTorch
 
         private string[] validFormats = new string[] { ".zip" , ".dll"};
 
-
-        private static bool IsValidPlugin(Assembly assembly)
+        private static bool AddPluginToPluginList(string file)
         {
-            if (assembly.FullName.Contains("Sandbox.Game, Version")) return false;
-            Type[] types;
-
-            try { types = assembly.GetTypes(); }
-            catch (ReflectionTypeLoadException ex) { types = ex.Types.Where(t => t != null).ToArray(); }
-            catch { return false; }
-            return types.Any(t => typeof(IPlugin).IsAssignableFrom(t) && t.IsClass && !t.IsAbstract);
-        }
-
-        private static bool IsValidPlugin(string dllPath)
-        {
-            if (string.IsNullOrWhiteSpace(dllPath) || !File.Exists(dllPath))
-                return false;
-
-            try
-            {
-                var assembly = Assembly.LoadFile(dllPath);
-                return IsValidPlugin(assembly);
-            }
-            catch (Exception ex)
-            {
-                Common.Logger.Error($" Failed to load {dllPath}: {ex.GetType().Name} - {ex.Message}");
-                return false;
-            }
-        }
-
-        public static bool AddPluginToPluginList(string file)
-        {
-            if (IsValidPlugin(file))
+            if (ServerUtil.IsValidPlugin(file))
             {
                 Assembly a = Assembly.LoadFile(file);
                 EventHub.OnCleanSpaceServerScannedPlugin(typeof(ConfigView), file, a);                

@@ -34,22 +34,16 @@ namespace CleanSpaceClient
             ChatterChallengeFactory.RegisterProvider(RequestType.MethodIL, (args) => {
 
                 MethodIdentifier m = ProtoUtil.Deserialize<MethodIdentifier>((byte[])args[0]);
-                // Find the assembly that contains the type
-                Type t = AppDomain.CurrentDomain
-                    .GetAssemblies()
-                    .Select(a => a.GetType(m.FullName, throwOnError: false))
-                    .FirstOrDefault(x => x != null);
+                Type t = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(m.FullName, throwOnError: false)).FirstOrDefault(x => x != null);
 
                 if (t == null)
                     throw new InvalidOperationException($"Type {m.FullName} not found in loaded assemblies");
 
-                MethodBase method = t.GetMethod(
-                    m.MethodName,
-                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static
-                );
+                MethodBase method = t.GetMethod(m.MethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
                 if (method == null)
                     throw new InvalidOperationException($"Method {m.MethodName} not found on type {m.FullName}");
+
                 return ILAttester.GetMethodIlBytes(method);
             });
 
@@ -110,7 +104,8 @@ namespace CleanSpaceClient
                 throw new InvalidOperationException(m);
             }
         }
-        
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
         public static bool Ensure() => true;
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
@@ -272,24 +267,26 @@ namespace CleanSpaceClient
 
                 var offenderPluginInfo = AssemblyScanner.GetRawPluginAssembliesData().Where((element) => Offenders.Contains(element.Hash, StringComparer.OrdinalIgnoreCase));
 
-                if (r.Code == ValidationResultCode.REJECTED_CLEANSPACE_HASH)
+                switch (r.Code)
                 {
-                    MsgBody.AppendLine("Your version of Clean Space is not allowed by the server. Update your version of Clean Space or contact the server owner to identify the version being used if not latest.");
+                    case ValidationResultCode.REJECTED_CLEANSPACE_HASH:
+                        MsgBody.AppendLine("Your version of Clean Space is not allowed by the server. Update your version of Clean Space or contact the server owner to identify the version being used if not latest.");
+                        break;
+                    case ValidationResultCode.REJECTED_MATCH:
+                        {
+                            MsgBody.AppendLine("Some of your currently loaded plugins were disallowed by the server. Disable them before attempting to join. \n Plugins: \n");
+                            offenderPluginInfo.ForEach((element) => MsgBody.AppendLine($"Plugin Name: {element.Name}"));
+                            MsgBody.AppendLine("\n\nIf you feel that this is an error, contact a Clean Space developer with your logs.");
+                            break;
+                        }
+                    case ValidationResultCode.EXPIRED_TOKEN:
+                        MsgBody.AppendLine("Clean Space rejected your connection due to an expired token. Perhaps network issues?");
+                        break;
+                    default:
+                        MsgBody.AppendLine("Clean Space rejected connection for unspecified reason. Contact a Clean Space dev with logs.");
+                        break;
                 }
-                else if (r.Code == ValidationResultCode.REJECTED_MATCH)
-                {
-                    MsgBody.AppendLine("Some of your currently loaded plugins were disallowed by the server. Disable them before attempting to join. \n Plugins: \n");
-                    offenderPluginInfo.ForEach((element) => MsgBody.AppendLine($"Plugin Name: {element.Name}"));
-                    MsgBody.AppendLine("\n\nIf you feel that this is an error, contact a Clean Space developer with your logs.");
-                }
-                else if (r.Code == ValidationResultCode.EXPIRED_TOKEN)
-                {
-                    MsgBody.AppendLine("Clean Space rejected your connection due to an expired token. Perhaps network issues?");
-                }
-                else
-                {
-                    MsgBody.AppendLine("Clean Space rejected connection for unspecified reason. Contact a Clean Space dev with logs.");
-                }
+
                 pendingMessageBox = MyGuiSandbox.CreateMessageBox(
                       MyMessageBoxStyleEnum.Info,
                       canBeHidden: false,
@@ -366,17 +363,16 @@ namespace CleanSpaceClient
             this.currentClientNonce = ValidationManager.RegisterNonceForPlayer(r.SenderId, true);
 
             if (r.NonceS == null)
-                Common.Logger.Warning($"{Common.PluginName} r.NonceS was null.");
+                Common.Logger.Warning($"{Common.PluginName}: Server didn't provide a token.");
 
-            var pluginHashes = AssemblyScanner.GetPluginAssemblies()?.Select<Assembly, string>((a) =>
-            {
+            var pluginHashes = AssemblyScanner.GetPluginAssemblies()?.Select<Assembly, string>((a) => {
                 try
                 {
                     return AssemblyScanner.GetSecureAssemblyFingerprint(a, Encoding.UTF8.GetBytes(r.NonceS));
                 }
                 catch (Exception ex)
                 {
-                    Common.Logger.Error($"{Common.PluginName} Failed to fingerprint assembly {a.FullName}: {ex}");
+                    Common.Logger.Error($"{Common.PluginName} Failed to fingerprint assembly {a.FullName}.");
                     return null;
                 }
             })

@@ -20,9 +20,7 @@ using Torch.API.Session;
 using Torch.Session;
 using CleanSpaceTorch.Tracker;
 using CleanSpaceTorch.Util;
-using VRage.GameServices;
 using VRage.Utils;
-using System.Reflection;
 
 namespace CleanSpaceTorch
 {
@@ -47,7 +45,7 @@ namespace CleanSpaceTorch
         private ConfigView control;
 
         private TorchSessionManager sessionManager;
-        private CleanSpaceTorch.CleanSpaceAssemblyManager assemblyManager;
+        private CleanSpaceAssemblyManager assemblyManager;
         private ClientSessionManager cleanSpaceClientManager;
         private bool initialized;
         private bool failed;
@@ -90,16 +88,23 @@ namespace CleanSpaceTorch
                 Log.Info("Patches applied.");
             }            
          
-            cleanSpaceClientManager = new ClientSessionManager();
-            
+            cleanSpaceClientManager = new ClientSessionManager();            
             Common.Logger.Info($"Torch directory is {AppDomain.CurrentDomain.BaseDirectory}");           
 
-            assemblyManager = new CleanSpaceTorch.CleanSpaceAssemblyManager(AppDomain.CurrentDomain.BaseDirectory);
+            assemblyManager = new CleanSpaceAssemblyManager(AppDomain.CurrentDomain.BaseDirectory);
             sessionManager.SessionStateChanged += SessionStateChanged;
 
             ServerSessionParameterProviders.RegisterProviders();
             assemblyManager.Init_Events();
+            Init_Critical_Types();
             initialized = true; 
+        }
+
+        private void Init_Critical_Types()
+        {
+            
+
+
         }
 
         private bool events_initialized = false;

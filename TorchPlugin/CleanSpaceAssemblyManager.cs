@@ -7,6 +7,10 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Reflection;
+using System.Linq;
+using System.Collections.Generic;
+using CleanSpaceTorch.Util;
+using System.Diagnostics;
 
 namespace CleanSpaceTorch
 {
@@ -17,6 +21,11 @@ namespace CleanSpaceTorch
         public static string cs_data_storage_dir;
         public static string cs_assembly_storage_dir;
         public static string cs_adv_log_dir;
+        private ObservableCollection<PluginListEntry> CleanSpaceScannedPluginList => Common.Config.AnalyzedPlugins;
+        private List<string> CleanSpaceScannedPluginHashes => CleanSpaceScannedPluginList.Select(e => e.Hash).ToList();
+        private IEnumerable<PluginListEntry> CleanSpaceActivePluginList => CleanSpaceScannedPluginList.Where((e)=>e.IsSelected);
+        private List<string> CleanSpaceActivePluginHashes => CleanSpaceActivePluginList.Select(e => e.Hash).ToList();
+        private bool ContainsHash(string h) => CleanSpaceScannedPluginList.Where(e => e.Hash.Equals(h)).Any();
         public CleanSpaceAssemblyManager(string _torch_dir) {
 
             torch_dir = _torch_dir;
@@ -24,7 +33,7 @@ namespace CleanSpaceTorch
             cs_assembly_storage_dir = Path.Combine(cs_data_storage_dir, "AssemblyStore");
             cs_adv_log_dir = Path.Combine(cs_data_storage_dir, "AdvancedLogs");
             InitializeDirectories();
-
+            Update_From_Store();
             CleanSpaceTorchPlugin.Instance.Config.AnalyzedPlugins.CollectionChanged += AnalyzedPlugins_CollectionChanged;
             Instance = this;
         }
@@ -33,13 +42,11 @@ namespace CleanSpaceTorch
         {
             if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
             {
-                foreach (var item in e.OldItems)
+                foreach (var item in e.OldItems ) 
                 {
                     var p = item as PluginListEntry;
                     if (File.Exists(p.Location))
-                    {
                         File.Delete(p.Location);
-                    }
                 }
             }
         }
@@ -61,9 +68,21 @@ namespace CleanSpaceTorch
         private void Update_From_Store()
         {
             var enumeration = Directory.EnumerateFiles(cs_assembly_storage_dir);
-            foreach (var file in enumeration){
-
-
+            foreach (var file in enumeration) {
+                if (!file.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)){
+                    continue;
+                }
+                if (ServerUtil.IsValidPlugin(file))
+                {
+                    Assembly asm = Assembly.LoadFrom(file);                   
+                    string asmHash = AssemblyScanner.GetAssemblyFingerprint(asm);
+                    if (!ContainsHash(asmHash)){
+                        Common.Logger.Info("Added plugin from store: " + asm.FullName);
+                        Common.Logger.Info("Version: " + asm.GetName().Version);
+                        AddPluginFromFile(file);
+                    }
+                }
+               
             }
         }
 

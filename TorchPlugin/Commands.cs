@@ -20,24 +20,12 @@ namespace CleanSpaceTorch
         private void RespondWithHelp()
         {
             Respond("PluginDetector commands:");
-            Respond("  !cmd help");
-            Respond("  !cmd info");
-            Respond("    Prints the current configuration settings.");
-            Respond("  !cmd enable");
-            Respond("    Enables the plugin");
-            Respond("  !cmd disable");
-            Respond("    Disables the plugin");
-            Respond("  !cmd subcmd <name> <value>");
-            Respond("    TODO Your subcommand");
         }
 
         private void RespondWithInfo()
         {
             var config = CleanSpaceTorchPlugin.Instance.Config;
             Respond($"{CleanSpaceTorchPlugin.PluginName} plugin is enabled: {Format(config.Enabled)}");
-            // TODO: Respond with your plugin settings
-            // For example:
-            //Respond($"custom_setting: {Format(config.CustomSetting)}");
         }
 
         // Custom formatters

@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("CleanSpace")]
+[assembly: AssemblyTitle("CleanSpaceTorch")]
 [assembly: AssemblyDescription("Clean Space for a friendly game.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("FerrenFX")]

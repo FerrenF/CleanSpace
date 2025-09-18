@@ -1,12 +1,10 @@
 using CleanSpaceShared.Config;
 using CleanSpaceShared.Struct;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Xml.Serialization;
 using Torch;
 using Torch.Views;
-using VRage.Library.Utils;
 
 namespace CleanSpaceTorch
 {
