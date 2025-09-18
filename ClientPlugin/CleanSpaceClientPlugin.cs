@@ -26,9 +26,7 @@ using VRageMath;
 
 namespace CleanSpaceClient
 {
-    internal static class ClientSessionParameterProviders
-    {
-      
+         
     // ReSharper disable once UnusedType.Global
     public class CleanSpaceClientPlugin : IPlugin, ICommonPlugin
     {
@@ -130,7 +128,7 @@ namespace CleanSpaceClient
             EventHub.CleanSpaceChatterReceived += EventHub_CleanSpaceChatterReceived;
             MyScreenManager.ScreenAdded += MyScreenManager_ScreenAdded;
 
-            ClientSessionParameterProviders.RegisterProviders();
+          
             Log.Debug($"{PluginName} Loaded");
         }
 
