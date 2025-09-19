@@ -30,9 +30,7 @@ namespace CleanSpaceTorch
     }
 
     public static class ValidationManager
-    {
-        public static IPluginLogger Log;
-              
+    {       
         
         private readonly static ConcurrentDictionary<ulong, PendingNonce> expectedNonces = new ConcurrentDictionary<ulong, PendingNonce>();
 
@@ -122,7 +120,8 @@ namespace CleanSpaceTorch
         }
         public static ValidationResultData Validate(ulong steamId, string receivedNonce, string securedSignature, byte[] signatureTransformer, List<String> hashList)
         {
-
+            var listType = CleanSpaceShared.Plugin.Common.Plugin.Config.PluginListType;
+            var action = CleanSpaceShared.Plugin.Common.Plugin.Config.ListMatchAction;
             var tokenValidationState = ValidateToken(steamId, receivedNonce);
             if(tokenValidationState!= ValidationResultCode.VALID_TOKEN)
             {
@@ -134,16 +133,24 @@ namespace CleanSpaceTorch
                 };
             }
 
+            List<string> untransformedCleanSpaceSignatures = GetCleanSpaceAssemblyList().Where((element)=>element.IsCleanSpace==1).Select(
+                (e)=>e.Hash
+                ).ToList();
+
+            var matchCleanSpace = hashList.Intersect(untransformedCleanSpaceSignatures).Any();
+            if (!matchCleanSpace)
+            {
+                if (action == ListMatchAction.Deny)
+                    return new ValidationResultData() { Code = ValidationResultCode.REJECTED_CLEANSPACE_HASH, PluginList = null, Success = false };
+            }
+
             List<string> transformedCleanSpaceSignatures = GetCleanSpaceAssemblyList().Select(
               (element) => HasherRunner.ExecuteRunner(signatureTransformer, Assembly.LoadFile(element.Location))
               ).ToList();
-
           
             var currentPluginList = CleanSpaceShared.Plugin.Common.Plugin.Config.AnalyzedPlugins;
             var selectedPluginHashes = currentPluginList.Where(e => e.IsSelected).Select(e => e.Hash).ToList();
-
-
-            var listType = CleanSpaceShared.Plugin.Common.Plugin.Config.PluginListType;
+           
 
             var conflictingHashes = listType == PluginListType.Blacklist  
                 // If it's a blacklist, then we are interested in which plugins the client has that are PRESENT in the list.
@@ -151,7 +158,6 @@ namespace CleanSpaceTorch
                 // If it's a whitelist, then we are interested in the plugins that are NOT PRESENT in the list.
                 : hashList.Except(selectedPluginHashes, StringComparer.OrdinalIgnoreCase).ToList();
 
-            var action = CleanSpaceShared.Plugin.Common.Plugin.Config.ListMatchAction;
 
             if (!transformedCleanSpaceSignatures.Contains(securedSignature))
             {

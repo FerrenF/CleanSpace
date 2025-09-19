@@ -60,7 +60,6 @@ namespace CleanSpaceTorch
             if (initialized) return;
             sessionManager = torch.Managers.GetManager<TorchSessionManager>();
             ConfigView.Log = Log;
-            ValidationManager.Log = Log;
 #if DEBUG
             // Allow the debugger some time to connect once the plugin assembly is loaded
             Thread.Sleep(100);

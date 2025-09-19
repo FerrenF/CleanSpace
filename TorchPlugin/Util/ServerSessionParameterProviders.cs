@@ -6,6 +6,8 @@ namespace CleanSpaceTorch.Util
 {
     internal class ServerSessionParameterProviders
     {
+
+        // these are here because the client counterparts initiate an app domain check that torch will fail.
         public static void RegisterProviders()
         {          
 

@@ -64,12 +64,6 @@ namespace CleanSpaceClient
                 Common.Logger.Error(m);
                 throw new InvalidOperationException(m);
             }
-
-            ChatterChallengeFactory.RegisterProvider(RequestType.MethodIL, (args) => {
-                return AssemblyScanner.ClientProviderMethod1_ILBytes(args);
-            });
-
-            Common.Logger.Info($"{Common.Logger}: Validation providers registered.");
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
@@ -100,7 +94,11 @@ namespace CleanSpaceClient
             EventHub.CleanSpaceChatterReceived += EventHub_CleanSpaceChatterReceived;
             MyScreenManager.ScreenAdded += MyScreenManager_ScreenAdded;
 
-          
+
+            ChatterChallengeFactory.RegisterProvider(RequestType.MethodIL, (args) => {
+                return AssemblyScanner.ClientProviderMethod1_ILBytes(args);
+            });
+
             Log.Debug($"{PluginName} Loaded");
         }
 

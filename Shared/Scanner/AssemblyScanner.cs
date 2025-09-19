@@ -11,27 +11,27 @@ namespace CleanSpaceShared.Scanner
 {    
     internal sealed class AssemblyScanner
     {
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static byte[] ClientProviderMethod1_ILBytes(params object[] args)
         {
-            if (!AssemblyScanner.IsInValidAppDomain())
+            if (!IsInValidAppDomain())
                 throw new InvalidOperationException();
 
             MethodIdentifier m = ProtoUtil.Deserialize<MethodIdentifier>((byte[])args[0]);
             Type t = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(m.FullName, throwOnError: false)).FirstOrDefault(x => x != null);
 
             if (t == null)
-                throw new InvalidOperationException($"Type {m.FullName} not found in loaded assemblies");
+                throw new InvalidOperationException($"E55: Attestation failed.");
 
             MethodBase method = t.GetMethod(m.MethodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
 
             if (method == null)
-                throw new InvalidOperationException($"Method {m.MethodName} not found on type {m.FullName}");
+                throw new InvalidOperationException($"E56: Attestation failed.");
 
             return ILAttester.GetMethodIlBytes(method);
         }
 
-        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         internal static bool IsInValidAppDomain()
         {
             try
@@ -44,7 +44,7 @@ namespace CleanSpaceShared.Scanner
                 var t = Type.GetType("Sandbox.Game.World.MySession, Sandbox.Game", throwOnError: false);
                 if (t != null) return true;
 
-                var t2 = Type.GetType("CleanSpace.CleanSpaceTorchPlugin, CleanSpace", throwOnError: false);
+                var t2 = Type.GetType("CleanSpaceTorch.CleanSpaceTorchPlugin, CleanSpace", throwOnError: false);
                 if (t2 != null) return true;
 
                 var procName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
