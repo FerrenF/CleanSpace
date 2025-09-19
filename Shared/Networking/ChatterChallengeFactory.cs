@@ -25,8 +25,6 @@ public class MethodIdentifier
     [ProtoMember(3)]
     public string MethodName { get; set; }
 
-    [ProtoMember(4)]
-    public bool InExecutingAssembly { get; set; }
 
 }
 
@@ -229,56 +227,35 @@ public static class ChatterChallengeFactory
 
                     bool ct_MakeCoreType = _rng.Next(0, 1) == 1;
 
-                    // On a coin flip, we either take a method from our critical types.
-                    if (!ct_MakeCoreType)
+                    Type[] choices = Common.CriticalTypes;
+                    Type choice = choices[_rng.Next(choices.Length)];
+                    MethodBase target = GetRandomMethod(choice);
+
+                    if (target == null)
                     {
-                        Type[] choices = Common.CriticalTypes;
-                        Type choice = choices[_rng.Next(choices.Length)];
-                        MethodBase target = GetRandomMethod(choice);
+                        Common.Logger.Error($"{Common.PluginName} Failed to resolve a target method for type {choice.FullName}");
+                        continue;
+                    }
 
-                        if (target == null)
+                    var paramTypes = target.GetParameters().Select(p => p.ParameterType.Name).ToArray();
+                    Common.Logger.Debug($"{Common.PluginName}: Assigned method: {target.DeclaringType?.FullName}.{target.Name}({string.Join(", ", paramTypes)})");
+
+                    byte[] serializedMethodBase = ProtoUtil.Serialize(
+                        new MethodIdentifier
                         {
-                            Common.Logger.Error($"{Common.PluginName} Failed to resolve a target method for type {choice.FullName}");
-                            continue;
-                        }
-
-                        var paramTypes = target.GetParameters().Select(p => p.ParameterType.Name).ToArray();
-                        Common.Logger.Debug($"{Common.PluginName}: Assigned method: {target.DeclaringType?.FullName}.{target.Name}({string.Join(", ", paramTypes)})");
-
-                        byte[] serializedMethodBase = ProtoUtil.Serialize(
-                            new MethodIdentifier
-                            {
-                                FullName = target.DeclaringType?.FullName ?? "<null>",
-                                MethodParams = paramTypes,
-                                MethodName = target.Name,
-                                InExecutingAssembly = false
-                            });
-
-                        Common.Logger.Debug($"{Common.PluginName}: Serialized MethodIdentifier (Base64): {Convert.ToBase64String(serializedMethodBase)}");
-
-                        requests.Add(new ChatterChallengeRequest
-                        {
-                            request = newRequesType,
-                            context = serializedMethodBase
+                            FullName = target.DeclaringType?.FullName ?? "<null>",
+                            MethodParams = paramTypes,
+                            MethodName = target.Name
                         });
-                    }
-                    else
-                    {
-                        // Or we ask for a method inside the main client class like such so we do not have to load the type (which may not work).
-                        string[] choices = Common.CriticalClientMethods;
-                        string choice = choices[_rng.Next(choices.Length)];
-                        string clientNamespace = "CleanSpaceClient.CleanSpaceClientPlugin";
-                        Common.Logger.Debug($"{Common.PluginName}: Assigned method: {clientNamespace}.{choice}");
 
-                        byte[] serializedMethodBase = ProtoUtil.Serialize(
-                           new MethodIdentifier
-                           {
-                               FullName = $"{clientNamespace}.{choice}",
-                               MethodParams =  new string[] { },
-                               MethodName = choice,
-                               InExecutingAssembly = true
-                           });
-                    }
+                    Common.Logger.Debug($"{Common.PluginName}: Serialized MethodIdentifier (Base64): {Convert.ToBase64String(serializedMethodBase)}");
+
+                    requests.Add(new ChatterChallengeRequest
+                    {
+                        request = newRequesType,
+                        context = serializedMethodBase
+                    });
+
                     break;                
             }
         }

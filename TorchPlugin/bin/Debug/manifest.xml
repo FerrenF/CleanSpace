@@ -1,7 +1,0 @@
-<?xml version="1.0"?>
-<PluginManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <Name>CleanSpace</Name>
-  <Guid>ac501074-b362-4ecb-b899-a173d691ef8f</Guid>
-  <Repository>PluginDetector</Repository>
-  <Version>v0.0.0.18</Version>
-</PluginManifest>

@@ -11,10 +11,9 @@ namespace CleanSpaceTorch.Util
 
             ChatterChallengeFactory.RegisterProvider(RequestType.MethodIL, (args) => {         
                 
-                // One last todo here: unfortunately, we will still be required to load the clean space client assembly to respond to challenges.
+                // One last todo here: unfortunately, we will still be required to load the clean space client assembly to respond to challenges.                
                 MethodIdentifier m = ProtoUtil.Deserialize<MethodIdentifier>((byte[])args[0]);
-                Type t = m.InExecutingAssembly ? CleanSpaceAssemblyManager.GetLatestCleanSpaceClientAssembly().GetType("CleanSpaceClientPlugin")
-                : AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(m.FullName, throwOnError: false)).FirstOrDefault(x => x != null);
+                Type t = AppDomain.CurrentDomain.GetAssemblies().Select(a => a.GetType(m.FullName, throwOnError: false)).FirstOrDefault(x => x != null);
 
                 if (t == null)
                     throw new InvalidOperationException($"Type {m.FullName} not found in loaded assemblies");

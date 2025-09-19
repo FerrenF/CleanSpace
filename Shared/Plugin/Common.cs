@@ -27,15 +27,6 @@ namespace CleanSpaceShared.Plugin
                         typeof(Hasher.HasherRunner)
         };
 
-        public static string[] CriticalClientMethods = new string[]{
-                       "Init",
-                       "EventHub_CleanSpaceChatterReceived",
-                       "EventHub_CleanSpaceHelloReceived",
-                       "EventHub_ServerCleanSpaceFinalized",
-                       "EventHub_ServerCleanSpaceRequested",
-                       "RegisterPackets"
-        };
-
         public static string InstanceSecret = _instanceSecret != null ? _instanceSecret :  (_instanceSecret = TokenUtility.GenerateToken(DateTime.UtcNow.ToLongTimeString(), DateTime.UtcNow.AddDays(1), "secret"));
         public static void SetPlugin(ICommonPlugin plugin, string gameVersion, string storageDir, string pluginName, bool isServer, IPluginLogger logger, IPluginConfig pluginConfig = null)
         {
