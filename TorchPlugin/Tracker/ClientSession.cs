@@ -1,5 +1,4 @@
-﻿using CleanSpaceTorch;
-using CleanSpaceTorch.Patch;
+﻿using CleanSpaceTorch.Patch;
 using CleanSpaceShared.Networking;
 using CleanSpaceShared.Scanner;
 using Sandbox.Engine.Multiplayer;
@@ -97,7 +96,7 @@ namespace CleanSpaceTorch.Tracker
             };
 
             this.ConnectionState = CS_CLIENT_STATE.PENDING;
-            this.SessionStartTime = DateTime.UtcNow;
+            this.SessionStartTime = DateTime.Now;
             CycleSalt();
 
 
@@ -560,7 +559,7 @@ namespace CleanSpaceTorch.Tracker
         public async Task DelayedDisconnect()
         {
             await Task.Delay(1000);
-            this.SessionEndTime = DateTimeOffset.UtcNow.DateTime;
+            this.SessionEndTime = DateTimeOffset.Now.DateTime;
             Common.Logger.Info($"Ticket cancelled for ID {steamId}.");
             ConnectedClientSendJoinPatch.CallPrivateMethod((MyDedicatedServerBase)MyDedicatedServerBase.Instance, steamId, JoinResult.TicketCanceled);
             ClientSessionManager.Instance?.RequestDispose(steamId);
@@ -571,7 +570,7 @@ namespace CleanSpaceTorch.Tracker
             await Task.Delay(10000);
             if (((int)ConnectionState) < ((int)CS_CLIENT_STATE.VALIDATION_RESPONDED))
             {
-                this.SessionEndTime = DateTimeOffset.UtcNow.DateTime;
+                this.SessionEndTime = DateTimeOffset.Now.DateTime;
                 Common.Logger.Info($"No response from ID {steamId} (held connection still present). Attempting to direct to information group.");
                 ConnectedClientSendJoinPatch.CallPrivateMethod((MyDedicatedServerBase)MyDedicatedServerBase.Instance, steamId, JoinResult.NotInGroup);
                 ClientSessionManager.Instance?.RequestDispose(steamId);

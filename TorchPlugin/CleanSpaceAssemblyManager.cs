@@ -1,15 +1,15 @@
-﻿using CleanSpaceShared.Scanner;
-using CleanSpaceShared.Events;
+﻿using CleanSpaceShared.Events;
 using CleanSpaceShared.Plugin;
+using CleanSpaceShared.Scanner;
 using CleanSpaceShared.Struct;
+using CleanSpaceTorch.Util;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Reflection;
 using System.Linq;
-using System.Collections.Generic;
-using CleanSpaceTorch.Util;
-using System.Diagnostics;
+using System.Reflection;
+using System.Windows;
 
 namespace CleanSpaceTorch
 {
@@ -45,8 +45,17 @@ namespace CleanSpaceTorch
                 foreach (var item in e.OldItems ) 
                 {
                     var p = item as PluginListEntry;
-                    if (File.Exists(p.Location))
-                        File.Delete(p.Location);
+                    var asmFile = p.Location;
+                    try
+                    {
+                        File.Delete(asmFile);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            $"Couldn't remove {asmFile}: {ex.Message}.\n" +
+                            $"Check permissions and ensure Torch has write access.");
+                    }
                 }
             }
         }
